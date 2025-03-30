@@ -53,7 +53,6 @@ Resources:
         InstanceType: "t2.micro"
         AmiId: "ami-0cf2b4e024cdb6960"
         SecurityGroupId: !GetAtt WebSecurityGroupDev.Outputs.NewWebSecurityGroupId
-        VpcId: '{{resolve:secretsmanager:web-stack-dev:SecretString:VpcId}}'
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
 
   ApiEc2InstanceDev:
@@ -67,5 +66,4 @@ Resources:
         InstanceType: "t2.micro"
         AmiId: "ami-0cf2b4e024cdb6960"
         SecurityGroupId: !GetAtt ApiSecurityGroupDev.Outputs.NewApiSecurityGroupId
-        VpcId: '{{resolve:secretsmanager:web-stack-dev:SecretString:VpcId}}'
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
