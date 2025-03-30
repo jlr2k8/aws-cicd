@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates an AWS Security Group for API server
+
+
+Parameters:
+  GroupName:
+    Type: String
+    Description: Choose a name for the security group
+    Default: 'API Security group name'
+    AllowedPattern: '[A-Za-z0-9\s\-]{0,255}'
+
+  GroupDescription:
+    Type: String
+    Description: Choose a description of the API security group (e.g. web and ssh traffic)
+    Default: 'API Security group description'
+    AllowedPattern: '[A-Za-z0-9\s\-]{0,255}'
+
+  NetworkPublicIp:
+    Type: String
+    Description: The API server's access is locked down to one public IP only. What is the current public IPV4 of its network?
+    AllowedPattern: '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$'
+
+  SecurityGroupWeb:
+    Type: String
+    Description: The web server will need inbound rules in this security group too. Which security group does the web server belong to?
+
+  VpcId:
+    Type: String
+    Description: Enter the VPC ID of the network
+
+
+Resources:
+  SecurityGroupApi:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Ref GroupName
+      GroupDescription: !Ref GroupDescription
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: !Sub ${NetworkPublicIp}/32
+          IpProtocol: '-1'
+        - SourceSecurityGroupId: !Ref SecurityGroupWeb
+          IpProtocol: '-1'
+      SecurityGroupEgress:
+        - CidrIp: '0.0.0.0/0'
+          IpProtocol: '-1'
+
+
+Outputs:
+  NewApiSecurityGroupId:
+    Description: Newly created API SG ID
+    Value: !Ref SecurityGroupApi

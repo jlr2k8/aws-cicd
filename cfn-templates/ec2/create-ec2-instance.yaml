@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates an EC2 instance
+
+
+Parameters:
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of the EC2 Key Pair to use for SSH access
+
+  InstanceName:
+    Type: String
+    Description: Name of instance (tag value)
+    Default: 'Web Server (dev)'
+
+  InstanceType:
+    Type: String
+    Description: EC2 instance type (t2.micro, t3.medium)
+    Default: 't2.micro'
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+
+  AmiId:
+    Type: 'AWS::EC2::Image::Id'
+    Description: AMI ID for the EC2 instance
+
+  SecurityGroupId:
+    Type: String
+    Description: Security Group ID
+
+  SubnetId:
+    Type: String
+    Description: Subnet ID
+
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiId
+      SubnetId: !Ref SubnetId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+      Monitoring: true
+      Tags:
+        - Value: !Ref InstanceName
+          Key: "Name"

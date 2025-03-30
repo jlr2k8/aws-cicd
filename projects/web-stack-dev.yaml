@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Builds web and API server resources (for dev environment)
+
+
+Parameters:
+  S3RootBucket:
+    Type: String
+    Description: S3 bucket where the cfn-templates and projects directories exist
+
+  S3RootBucketRegion:
+    Type: String
+    Description: Region of the S3 Root bucket
+
+  NetworkPublicIp:
+    Type: String
+    Description: The API server's access is locked down to one public IP only. What is the current public IPV4 of its network?
+    AllowedPattern: '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$'
+
+
+Resources:
+  WebSecurityGroupDev:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    Properties:
+      TemplateURL: !Sub "https://${S3RootBucket}.s3.${S3RootBucketRegion}.amazonaws.com/ec2/create-security-group-web.yaml"
+      Parameters:
+        GroupName: "web-server-dev-security-group"
+        GroupDescription: "AWS EC2 Security Group for web-stack-dev"
+
+  ApiSecurityGroupDev:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    Properties:
+      TemplateURL: !Sub "https://git-scripts-sync.s3.${S3RootBucketRegion}.amazonaws.com/ec2/create-security-group-api.yaml"
+      Parameters:
+        GroupName: "api-server-dev-security-group"
+        GroupDescription: "AWS EC2 Security Group for api-stack-dev"
+        NetworkPublicIp: !Ref NetworkPublicIp
+        SecurityGroupWeb: !GetAtt WebSecurityGroupDev.Outputs.NewWebSecurityGroupId
+
+  WebEc2InstanceDev:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    Properties:
+      TemplateURL: !Sub "https://git-scripts-sync.s3.${S3RootBucketRegion}.amazonaws.com/ec2/create-ec2-instance.yaml"
+      Parameters:
+        KeyPairName: "test-ec2-instances"
+        InstanceName: "web-server-dev"
+        InstanceType: "t2.micro"
+        AmiId: "ami-0cf2b4e024cdb6960"
+        SecurityGroupId: !GetAtt WebSecurityGroupDev.Outputs.NewWebSecurityGroupId
+
+  ApiEc2InstanceDev:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    Properties:
+      TemplateURL: !Sub "https://git-scripts-sync.s3.${S3RootBucketRegion}.amazonaws.com/ec2/create-ec2-instance.yaml"
+      Parameters:
+        KeyPairName: "test-ec2-instances"
+        InstanceName: "api-server-dev"
+        InstanceType: "t2.micro"
+        AmiId: "ami-0cf2b4e024cdb6960"
+        SecurityGroupId: !GetAtt ApiSecurityGroupDev.Outputs.NewApiSecurityGroupId

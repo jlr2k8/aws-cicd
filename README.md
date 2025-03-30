@@ -1,2 +1,39 @@
-# aws-cicd
+# [DRAFT] aws-cicd
 Collection of AWS resources for CICD pipeline deployment and automation.
+
+* Under the `cfn-templates` directory, the CloudFormation template `create-cicd-pipeline.yaml` takes a project name parameter, which references a file's basename within the `projects/` directory.
+  * Example: `cd cfn-templates/ && aws cloudformation create-stack --stack-name web-stack-dev`.
+* The directory `projects/` contains the file that create the downstream pipelines.
+    * Using the example above, that would be: `projects/web-stack-dev.yaml`.
+* General CloudFormation templates are stored in other subdirectories. These are designed to be modular, re-used, and nested in multiple projects:
+  * `cfn-templates/codebuild/`
+  * `cfn-templates/ec2/`
+  * `cfn-templates/ecs/`
+  * `cfn-templates/s3/`
+
+* Bash scripts for testing pipelines in development & cleanup for projects are stored in `bash-scripts/`.
+  * Pipeline cleanup script. Deleting a CloudFormation stack doesn't always clean up the whole project and the resources it created! The main bash script to help with that is:
+    * `bash-scripts/cleanup-cicd-pipeline.sh` cleans up a project by passing in these parameters:
+      * `-p` Project Name
+      * `-s` Parent CloudFormation stack name
+      * Example: `./bash-scripts/cleanup-cicd-pipeline.sh -p web-stack-dev -s web-stack-dev-infra`
+    * For each project, the `bash-scripts/` subdirectory `cleanup-cicd-pipeline.d/` contains scripts named after the project.
+    * In the above example, that would be a bash file in `cleanup-cicd-pipeline.d/web-stack-dev.sh`.
+    * If a specific project and its resources need to be wiped out, this sub-script is sourced from the `cleanup-cicd-pipeline.sh` script to cleanup the specific downstream pipelines and resources.
+  * S3 project sync script. This is run on a cronjob (but can be run manually). Since CodeCommit is deprecated, and some of my projects are on a privately hosted git server, this bash script syncs all of the CloudFormation files to an S3 bucket. When updated files in the S3 bucket are polled by CodeBuild, the downstream pipelines are updated. If polling is disabled in the CloudFormation script, the `s3 sync` `--size-only` flag can be used to trigger CodeBuild.
+    * Example of sync (bash): `aws s3 sync aws-cicd/ ${S3_BUCKET_URL} --profile ${S3_USER_PROFILE} --size-only`
+    * These projects should be zipped to create artifacts.
+      * Example (but see `bash-scripts/sync-projects.sh`): 
+      ```
+      for f in *.yaml *.yml; do
+        if [[ -f "${f}" ]]; then
+          echo "$(date) :: Zipping project ${f} to ${f}.zip"
+          echo
+      
+          zip "${f}.zip" "${f}"
+        fi
+        done
+              
+      aws s3 sync aws-cicd/ ${S3_BUCKET_URL} --profile ${S3_USER_PROFILE} --size-only
+      ```
+
