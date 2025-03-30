@@ -155,6 +155,7 @@ Resources:
                   - logs:PutLogEvents
                   - ec2:*
                   - sts:*
+                  - secretsmanager:GetSecretValue
                 Resource: "*"
 
   PipelineBuildServiceRole:
