@@ -22,7 +22,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL: !Sub "https://${S3RootBucket}.s3.${S3RootBucketRegion}.amazonaws.com/ec2/create-security-group-web.yaml"
+      TemplateURL: !Sub "https://${S3RootBucket}.s3.${S3RootBucketRegion}.amazonaws.com/cfn-templates/ec2/create-security-group-web.yaml"
       Parameters:
         GroupName: "web-server-dev-security-group"
         GroupDescription: "AWS EC2 Security Group for web-stack-dev"
@@ -31,7 +31,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL: !Sub "https://git-scripts-sync.s3.${S3RootBucketRegion}.amazonaws.com/ec2/create-security-group-api.yaml"
+      TemplateURL: !Sub "https://git-scripts-sync.s3.${S3RootBucketRegion}.amazonaws.com/cfn-templates/ec2/create-security-group-api.yaml"
       Parameters:
         GroupName: "api-server-dev-security-group"
         GroupDescription: "AWS EC2 Security Group for api-stack-dev"
@@ -42,7 +42,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL: !Sub "https://git-scripts-sync.s3.${S3RootBucketRegion}.amazonaws.com/ec2/create-ec2-instance.yaml"
+      TemplateURL: !Sub "https://git-scripts-sync.s3.${S3RootBucketRegion}.amazonaws.com/cfn-templates/ec2/create-ec2-instance.yaml"
       Parameters:
         KeyPairName: "test-ec2-instances"
         InstanceName: "web-server-dev"
@@ -54,7 +54,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL: !Sub "https://git-scripts-sync.s3.${S3RootBucketRegion}.amazonaws.com/ec2/create-ec2-instance.yaml"
+      TemplateURL: !Sub "https://git-scripts-sync.s3.${S3RootBucketRegion}.amazonaws.com/cfn-templates/ec2/create-ec2-instance.yaml"
       Parameters:
         KeyPairName: "test-ec2-instances"
         InstanceName: "api-server-dev"
