@@ -23,8 +23,8 @@ CLEANUP_CICD_PIPELINE_SUBDIR=${BASH_SOURCE%/*}/cleanup-cicd-pipeline.d
 AWS_PROJECT_NAME=
 AWS_CFN_STACK_NAME=
 AWS_S3_BUCKET_NAME=
-AWS_REGION=
 AWS_ACCOUNT_ID=
+AWS_REGION=
 
 function showHelp() {
   echo 'Parameters
@@ -48,6 +48,14 @@ while getopts ":p:s:a:r:h" OPT; do
         s)
             echo "CloudFormation Stack Name: ${OPTARG}"
             AWS_CFN_STACK_NAME="${OPTARG}"
+            ;;
+        a)
+            echo "AWS Account ID: ${OPTARG}"
+            AWS_ACCOUNT_ID=${OPTARG}
+            ;;
+        r)
+            echo "AWS Account Region: ${OPTARG}"
+            AWS_REGION=${OPTARG}
             ;;
         h|*)
             showHelp
