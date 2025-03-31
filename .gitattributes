@@ -1,1 +1,5 @@
+cfn-templates/** linguist-vendored=true
+projects/* linguist-vendored=true
+bash-scripts/** linguist-vendored=true
 *.yaml linguist-detectable=true
+*.sh linguist-detectable=true
