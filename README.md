@@ -3,7 +3,7 @@ Collection of AWS resources for CICD pipeline deployment and automation.
 
 * Under the `cfn-templates` directory, the CloudFormation template `create-cicd-pipeline.yaml` takes a project name parameter, which references a file's basename within the `projects/` directory.
   * Example to create the pipeline for `web-stack-dev`:
-    * `aws cloudformation create-stack --stack-name web-stack-dev-infra --template-url https://${AWS_S3_BUCKET_NAME}.s3.us-west-2.amazonaws.com/cfn-templates/create-cicd-pipeline.yaml --parameters ParameterKey=PipelineName,ParameterValue=web-stack-dev ParameterKey=S3RootBucket,ParameterValue=${AWS_S3_BUCKET_NAME} --profile {AWS_S3_PROFILE} --region ${AWS_REGION} --capabilities CAPABILITY_NAMED_IAM`.
+    * `aws cloudformation create-stack --stack-name web-stack-dev-infra --template-url https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/cfn-templates/create-cicd-pipeline.yaml --parameters ParameterKey=PipelineName,ParameterValue=web-stack-dev ParameterKey=S3RootBucket,ParameterValue=${AWS_S3_BUCKET_NAME} --profile {AWS_S3_PROFILE} --region ${AWS_REGION} --capabilities CAPABILITY_NAMED_IAM`.
 * The directory `projects/` contains the file that create the downstream pipelines.
     * Using the example above, that would be: `projects/web-stack-dev.yaml`.
 * General CloudFormation templates are stored in other subdirectories. These are designed to be modular, re-used, and nested in multiple projects:
