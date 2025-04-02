@@ -54,6 +54,12 @@ Resources:
         AmiId: "ami-0cf2b4e024cdb6960"
         SecurityGroupId: !GetAtt WebSecurityGroupDev.Outputs.NewWebSecurityGroupId
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
+# TODO
+#        UserData:
+#          Fn::Base64: !Sub |
+#            #!/bin/bash
+#
+#            apt-get update && echo "I'm the dev web server!"
 
   ApiEc2InstanceDev:
     Type: AWS::CloudFormation::Stack
@@ -67,3 +73,9 @@ Resources:
         AmiId: "ami-0cf2b4e024cdb6960"
         SecurityGroupId: !GetAtt ApiSecurityGroupDev.Outputs.NewApiSecurityGroupId
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
+# TODO
+#        UserData:
+#          Fn::Base64: !Sub |
+#            #!/bin/bash
+#
+#            apt-get update && echo "I'm the dev API server!"
