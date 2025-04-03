@@ -35,11 +35,6 @@ Parameters:
   UserData:
     Type: String
     Description: Bash script to run when the instance is created
-    Default:
-      Fn::Base64:
-        !Sub |
-          #!/bin/bash
-          # Do nothing here by default...
 
 Resources:
   EC2Instance:
