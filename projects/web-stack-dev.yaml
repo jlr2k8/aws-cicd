@@ -55,7 +55,7 @@ Resources:
         SecurityGroupId: !GetAtt WebSecurityGroupDev.Outputs.NewWebSecurityGroupId
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
         UserData:
-          Fn::Base64: !Sub |
+          "Fn::Base64": !Sub |
             #!/bin/bash
             apt-get update && echo "I'm the dev web server!"
 
@@ -72,6 +72,6 @@ Resources:
         SecurityGroupId: !GetAtt ApiSecurityGroupDev.Outputs.NewApiSecurityGroupId
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
         UserData:
-          Fn::Base64: !Sub |
+          "Fn::Base64": !Sub |
             #!/bin/bash
             apt-get update && echo "I'm the dev API server!"
