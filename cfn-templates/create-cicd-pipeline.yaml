@@ -71,7 +71,7 @@ Resources:
                 RoleArn: !GetAtt PipelineServiceRole.Arn
                 ParameterOverrides: |
                   {
-                    "TestParam": "why"
+                    "TestParam": "${TEST_PARAM}"
                   }
     DependsOn:
       - CodeBuild
