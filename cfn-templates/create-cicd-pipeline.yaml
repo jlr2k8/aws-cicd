@@ -87,8 +87,11 @@ Resources:
           phases:
             build:
               commands:
-                - echo 'Listing out files'
+                - echo 'Listing out files...'
                 - ls -lta
+                - echo 'Quick test...'
+                - export TEST_PARAM='lorem ipsum'
+                - echo ${TEST_PARAM}
           artifacts:
             files:
               - '**/*'
