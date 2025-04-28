@@ -47,6 +47,6 @@ Resources:
 
 
 Outputs:
-  NewApiSecurityGroupId:
-    Description: Newly created API SG ID
+  ApiSecurityGroupId:
+    Description: API SG ID
     Value: !Ref SecurityGroupApi

@@ -50,6 +50,6 @@ Resources:
 
 
 Outputs:
-  NewWebSecurityGroupId:
-    Description: Newly created Web SG ID
+  WebSecurityGroupId:
+    Description: Web Dev SG ID
     Value: !Ref SecurityGroupWeb

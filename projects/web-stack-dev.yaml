@@ -6,13 +6,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL: !Join
-        - ""
-        - - "https://"
-          - '{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucket}}'
-          - ".s3."
-          - '{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucketRegion}}'
-          - ".amazonaws.com/cfn-templates/ec2/create-security-group-web.yaml"
+      TemplateURL: "https://{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucket}}.s3.{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucketRegion}}.amazonaws.com/cfn-templates/ec2/create-security-group-web.yaml"
       Parameters:
         GroupName: "web-server-dev-security-group"
         GroupDescription: "AWS EC2 Security Group for web-stack-dev"
@@ -22,37 +16,25 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL: !Join
-        - ""
-        - - "https://"
-          - '{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucket}}'
-          - ".s3."
-          - '{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucketRegion}}'
-          - ".amazonaws.com/cfn-templates/ec2/create-security-group-api.yaml"
+      TemplateURL: "https://{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucket}}.s3.{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucketRegion}}.amazonaws.com/cfn-templates/ec2/create-security-group-api.yaml"
       Parameters:
         GroupName: "api-server-dev-security-group"
         GroupDescription: "AWS EC2 Security Group for api-stack-dev"
         NetworkPublicIp: '{{resolve:secretsmanager:web-stack-dev:SecretString:NetworkPublicIp}}'
-        SecurityGroupWeb: !GetAtt WebSecurityGroupDev.Outputs.NewWebSecurityGroupId
+        SecurityGroupWeb: !GetAtt WebSecurityGroupDev.Outputs.WebSecurityGroupId
         VpcId: '{{resolve:secretsmanager:web-stack-dev:SecretString:VpcId}}'
 
   WebEc2InstanceDev:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL: !Join
-        - ""
-        - - "https://"
-          - '{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucket}}'
-          - ".s3."
-          - '{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucketRegion}}'
-          - ".amazonaws.com/cfn-templates/ec2/create-ec2-instance.yaml"
+      TemplateURL: "https://{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucket}}.s3.{{resolve:secretsmanager:web-stack-dev:SecretString:S3RootBucketRegion}}.amazonaws.com/cfn-templates/ec2/create-ec2-instance.yaml"
       Parameters:
         KeyPairName: "test-ec2-instances"
         InstanceName: "web-server-dev"
         InstanceType: "t2.micro"
         AmiId: "ami-0cf2b4e024cdb6960"
-        SecurityGroupId: !GetAtt WebSecurityGroupDev.Outputs.NewWebSecurityGroupId
+        SecurityGroupId: !GetAtt WebSecurityGroupDev.Outputs.WebSecurityGroupId
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
         UserData:
           "Fn::Base64": !Sub |
@@ -69,7 +51,7 @@ Resources:
         InstanceName: "api-server-dev"
         InstanceType: "t2.micro"
         AmiId: "ami-0cf2b4e024cdb6960"
-        SecurityGroupId: !GetAtt ApiSecurityGroupDev.Outputs.NewApiSecurityGroupId
+        SecurityGroupId: !GetAtt ApiSecurityGroupDev.Outputs.ApiSecurityGroupId
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
         UserData:
           "Fn::Base64": !Sub |
