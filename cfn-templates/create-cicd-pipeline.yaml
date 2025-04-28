@@ -71,7 +71,7 @@ Resources:
                 RoleArn: !GetAtt PipelineServiceRole.Arn
                 ParameterOverrides: |
                   {
-                    "TestParam":"#{BuildVariables.TEST_PARAM}"
+                    "TestParam": "thisIsGettingAnnoying"
                   }
     DependsOn:
       - CodeBuild
