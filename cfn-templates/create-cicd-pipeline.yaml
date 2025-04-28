@@ -53,7 +53,6 @@ Resources:
                 - Name: Build
               Configuration:
                 ProjectName: !Sub ${PipelineName}-Build
-                ParameterOverrides: "{\"TestParam\":\"#{BuildVariables.TEST_PARAM}\"}"
         - Name: Deploy
           Actions:
             - Name: DeployAction
@@ -70,7 +69,7 @@ Resources:
                 TemplatePath: !Sub Build::${PipelineName}.yaml
                 Capabilities: CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt PipelineServiceRole.Arn
-
+                ParameterOverrides: "{\"TestParam\":\"#{BuildVariables.TEST_PARAM}\"}"
     DependsOn:
       - CodeBuild
 
