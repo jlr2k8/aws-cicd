@@ -71,7 +71,7 @@ Resources:
                 RoleArn: !GetAtt PipelineServiceRole.Arn
                 ParameterOverrides: |
                   {
-                    "TestParam": "thisIsGettingAnnoying"
+                    "TestParam": "#{CodeBuild.TEST_PARAM}"
                   }
     DependsOn:
       - CodeBuild
@@ -88,10 +88,7 @@ Resources:
         Location: !Sub ${S3RootBucket}/projects/${PipelineName}.yaml.zip
         BuildSpec: |
           version: 0.2
-          
-          exported-variables:
-            - TEST_PARAM
-          
+
           phases:
             build:
               commands:
