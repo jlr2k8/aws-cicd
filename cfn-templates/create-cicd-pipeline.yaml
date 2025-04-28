@@ -69,7 +69,7 @@ Resources:
                 TemplatePath: !Sub Build::${PipelineName}.yaml
                 Capabilities: CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt PipelineServiceRole.Arn
-                ParameterOverrides: |
+                ParameterOverrides: !Sub |
                   {
                     "TestParam": "${TEST_PARAM}"
                   }
