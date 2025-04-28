@@ -69,6 +69,7 @@ Resources:
                 TemplatePath: !Sub Build::${PipelineName}.yaml
                 Capabilities: CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt PipelineServiceRole.Arn
+
     DependsOn:
       - CodeBuild
 
@@ -84,6 +85,10 @@ Resources:
         Location: !Sub ${S3RootBucket}/projects/${PipelineName}.yaml.zip
         BuildSpec: |
           version: 0.2
+          
+          exported-variables:
+            - TEST_PARAM
+          
           phases:
             build:
               commands:

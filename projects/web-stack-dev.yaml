@@ -1,6 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Builds web and API server resources (for dev environment)
 
+Parameters:
+  TestParam:
+    Type: String
+    Default: "NULL"
+
 Resources:
   WebSecurityGroupDev:
     Type: AWS::CloudFormation::Stack
