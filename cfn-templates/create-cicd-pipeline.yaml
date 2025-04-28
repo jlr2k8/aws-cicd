@@ -53,6 +53,7 @@ Resources:
                 - Name: Build
               Configuration:
                 ProjectName: !Sub ${PipelineName}-Build
+                ParameterOverrides: "{\"TestParam\":\"#{BuildVariables.TEST_PARAM}\"}"
         - Name: Deploy
           Actions:
             - Name: DeployAction
