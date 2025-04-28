@@ -12,6 +12,10 @@ Parameters:
     Type: String
     Description: S3 bucket where the cfn-templates and projects directories exist
 
+  TestParam:
+    Type: String
+    Default: "NULL"
+
 
 Resources:
   CodePipeline:
@@ -71,7 +75,7 @@ Resources:
                 RoleArn: !GetAtt PipelineServiceRole.Arn
                 ParameterOverrides: !Sub |
                   {
-                    "TestParam": "${TEST_PARAM}"
+                    "TestParam": "${TestParam}"
                   }
     DependsOn:
       - CodeBuild
