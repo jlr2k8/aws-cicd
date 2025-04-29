@@ -53,6 +53,7 @@ Resources:
                 - Name: Build
               Configuration:
                 ProjectName: !Sub ${PipelineName}-Build
+              Namespace: CodeBuildExports
         - Name: Deploy
           Actions:
             - Name: DeployAction
@@ -71,7 +72,7 @@ Resources:
                 RoleArn: !GetAtt PipelineServiceRole.Arn
                 ParameterOverrides: |
                   {
-                    "TestParam": "#{web-stack-dev-Build.TEST_PARAM}"
+                    "TestParam": "#{CodeBuildExports.TEST_PARAM}"
                   }
     DependsOn:
       - CodeBuild
@@ -88,6 +89,10 @@ Resources:
         Location: !Sub ${S3RootBucket}/projects/${PipelineName}.yaml.zip
         BuildSpec: |
           version: 0.2
+
+          env:
+            exported-values:
+              - TEST_PARAM
 
           phases:
             build:
