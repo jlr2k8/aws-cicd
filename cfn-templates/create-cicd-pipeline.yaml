@@ -98,7 +98,7 @@ Resources:
               commands:
                 - echo 'Listing out files'
                 - ls -lta
-                - echo '{"TestParam": "Testing"}' > output.json
+                - echo '{"TestParam":"Testing"}' > output.json
           artifacts:
             files:
               - '**/*'
