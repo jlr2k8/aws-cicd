@@ -98,7 +98,7 @@ Resources:
               commands:
                 - echo 'Listing out files'
                 - ls -lta
-                - echo '{"TestParam": "Testing to see if I can output the S3 bucket - ${PipelineName}"}' > output.json
+                - echo '{"TestParam": "Testing static param again"}' > output.json
           artifacts:
             files:
               - '**/*'
