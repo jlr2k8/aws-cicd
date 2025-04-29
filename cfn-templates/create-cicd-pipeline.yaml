@@ -91,7 +91,7 @@ Resources:
       Source:
         Type: S3
         Location: !Sub ${S3RootBucket}/projects/${PipelineName}.yaml.zip
-        BuildSpec: !Sub |
+        BuildSpec: |
           version: 0.2
           phases:
             build:
