@@ -1,6 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Builds web and API server resources (for dev environment)
 
+Parameters:
+  TestParam:
+    Type: String
+
 Resources:
   WebSecurityGroupDev:
     Type: AWS::CloudFormation::Stack
@@ -39,7 +43,7 @@ Resources:
         UserData:
           "Fn::Base64": !Sub |
             #!/bin/bash
-            apt-get update && echo "I'm the dev web server!"
+            apt-get update && echo "${TestParam}" > /usr/local/test-2025-04-28.txt
 
   ApiEc2InstanceDev:
     Type: AWS::CloudFormation::Stack
