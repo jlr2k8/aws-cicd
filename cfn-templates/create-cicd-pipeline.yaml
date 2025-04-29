@@ -94,6 +94,7 @@ Resources:
               commands:
                 - echo 'Listing out files'
                 - ls -lta
+                - echo 'lorem ipsum' > output.json
           artifacts:
             files:
               - '**/*'
