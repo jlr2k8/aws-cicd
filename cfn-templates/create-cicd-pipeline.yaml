@@ -72,7 +72,7 @@ Resources:
                 RoleArn: !GetAtt PipelineServiceRole.Arn
                 ParameterOverrides: |
                   {
-                    "TestParam": "#{CodeBuildExports.TEST_PARAM}"
+                    "TestParam": "${Fn::GetParam['BuildArtifact', 'env_vars.json', 'TEST_PARAM']}"
                   }
     DependsOn:
       - CodeBuild
@@ -99,9 +99,18 @@ Resources:
               commands:
                 - echo 'Listing out files...'
                 - ls -lta
-                - echo 'Quick test...'
+
                 - export TEST_PARAM='lorem ipsum'
+
                 - echo ${TEST_PARAM}
+
+                - |
+                  cat &lt;&lt;EOF &gt; env_vars.json
+                  {
+                    "TEST_PARM": "${TEST_PARM}"
+                  }
+                  EOF
+
           artifacts:
             files:
               - '**/*'
