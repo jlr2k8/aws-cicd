@@ -63,15 +63,13 @@ Resources:
                 Version: '1'
               InputArtifacts:
                 - Name: Build
+                - Name: BuildArtifact
               Configuration:
                 ActionMode: CREATE_UPDATE
                 StackName: !Sub ${AWS::StackName}
                 TemplatePath: !Sub Build::${PipelineName}.yaml
                 Capabilities: CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt PipelineServiceRole.Arn
-                InputArtifacts:
-                  - Name: source
-                  - Name: BuildArtifact
                 OutputFileName: output.json
                 ParameterOverrides: |
                   {
