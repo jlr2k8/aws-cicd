@@ -69,6 +69,11 @@ Resources:
                 TemplatePath: !Sub Build::${PipelineName}.yaml
                 Capabilities: CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt PipelineServiceRole.Arn
+                OutputFileName: output.json
+                ParameterOverrides: |
+                  {
+                    "TestParam": { "Fn::GetParam" : ["BuildArtifact", "output.json", "lorem ipsum"] }
+                  }
     DependsOn:
       - CodeBuild
 
