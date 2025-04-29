@@ -72,7 +72,7 @@ Resources:
                 OutputFileName: output.json
                 ParameterOverrides: |
                   {
-                    "TestParam": { "Fn::GetParam" : ["Build", "output.json", "lorem ipsum"] }
+                    "TestParam": { "Fn::GetParam" : ["Build", "output.json", "TestParam"] }
                   }
     DependsOn:
       - CodeBuild
@@ -94,7 +94,7 @@ Resources:
               commands:
                 - echo 'Listing out files'
                 - ls -lta
-                - echo 'lorem ipsum' > output.json
+                - echo '{"TestParam":"lorem ipsum"}' > output.json
           artifacts:
             files:
               - '**/*'
