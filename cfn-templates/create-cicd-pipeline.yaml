@@ -105,11 +105,9 @@ Resources:
                 - echo ${TEST_PARAM}
 
                 - |
-                  cat &lt;&lt;EOF &gt; env_vars.json
-                  {
-                    "TEST_PARM": "${TEST_PARM}"
-                  }
-                  EOF
+                  echo '{
+                    "TEST_PARAM": "'${TEST_PARAM}'"
+                  }' &gt; env_vars.json
 
           artifacts:
             files:
