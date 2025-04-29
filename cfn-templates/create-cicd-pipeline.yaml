@@ -53,7 +53,6 @@ Resources:
                 - Name: Build
               Configuration:
                 ProjectName: !Sub ${PipelineName}-Build
-              Namespace: CodeBuildExports
         - Name: Deploy
           Actions:
             - Name: DeployAction
@@ -70,10 +69,6 @@ Resources:
                 TemplatePath: !Sub Build::${PipelineName}.yaml
                 Capabilities: CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt PipelineServiceRole.Arn
-                ParameterOverrides: |
-                  {
-                    "TestParam": "${Fn::GetParam['BuildArtifact', 'env_vars.json', 'TEST_PARAM']}"
-                  }
     DependsOn:
       - CodeBuild
 
@@ -89,26 +84,11 @@ Resources:
         Location: !Sub ${S3RootBucket}/projects/${PipelineName}.yaml.zip
         BuildSpec: |
           version: 0.2
-
-          env:
-            exported-values:
-              - TEST_PARAM
-
           phases:
             build:
               commands:
-                - echo 'Listing out files...'
+                - echo 'Listing out files'
                 - ls -lta
-
-                - export TEST_PARAM='lorem ipsum'
-
-                - echo ${TEST_PARAM}
-
-                - |
-                  echo '{
-                    "TEST_PARAM": "'${TEST_PARAM}'"
-                  }' &gt; env_vars.json
-
           artifacts:
             files:
               - '**/*'
