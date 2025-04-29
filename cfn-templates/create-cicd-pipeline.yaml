@@ -63,7 +63,6 @@ Resources:
                 Version: '1'
               InputArtifacts:
                 - Name: Build
-                - Name: BuildArtifact
               Configuration:
                 ActionMode: CREATE_UPDATE
                 StackName: !Sub ${AWS::StackName}
@@ -73,7 +72,7 @@ Resources:
                 OutputFileName: output.json
                 ParameterOverrides: |
                   {
-                    "TestParam": { "Fn::GetParam" : ["BuildArtifact", "output.json", "lorem ipsum"] }
+                    "TestParam": { "Fn::GetParam" : ["Build", "output.json", "lorem ipsum"] }
                   }
     DependsOn:
       - CodeBuild
