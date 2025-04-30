@@ -76,7 +76,7 @@ Resources:
                 OutputFileName: output.json
                 ParameterOverrides: !Sub |
                   {
-                    "TestParam": { "Fn::GetParam" : ["Build", "output.json", "Testing something dynamic ${S3RootBucket}"] }
+                    "TestParam": { "Fn::GetParam" : ["Build", "output.json", "TestParam"] }
                   }
     DependsOn:
       - CodeBuild
@@ -91,14 +91,14 @@ Resources:
       Source:
         Type: S3
         Location: !Sub ${S3RootBucket}/projects/${PipelineName}.yaml.zip
-        BuildSpec: |
+        BuildSpec: !Sub |
           version: 0.2
           phases:
             build:
               commands:
                 - echo 'Listing out files'
                 - ls -lta
-                - echo '{"TestParam":"Testing"}' > output.json
+                - echo '{"TestParam":"Testing something dynamic ${S3RootBucket"}' > output.json
           artifacts:
             files:
               - '**/*'
