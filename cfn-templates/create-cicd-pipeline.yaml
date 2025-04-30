@@ -74,9 +74,9 @@ Resources:
                 Capabilities: CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt PipelineServiceRole.Arn
                 OutputFileName: output.json
-                ParameterOverrides: |
+                ParameterOverrides: !Sub |
                   {
-                    "TestParam": { "Fn::GetParam" : ["Build", "output.json", "TestParam"] }
+                    "TestParam": { "Fn::GetParam" : ["Build", "output.json", "Testing something dynamic ${S3RootBucket}"] }
                   }
     DependsOn:
       - CodeBuild
