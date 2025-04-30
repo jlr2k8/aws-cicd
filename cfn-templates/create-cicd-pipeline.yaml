@@ -98,7 +98,7 @@ Resources:
               commands:
                 - echo 'Listing out files'
                 - ls -lta
-                - echo '{"TestParam":"Testing something dynamic ${S3RootBucket}}' > output.json
+                - echo '{"TestParam":"Testing something dynamic ${S3RootBucket}"}' > output.json
           artifacts:
             files:
               - '**/*'
