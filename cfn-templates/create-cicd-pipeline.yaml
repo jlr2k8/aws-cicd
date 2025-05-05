@@ -39,7 +39,7 @@ Resources:
                 Version: '1'
               Configuration:
                 S3Bucket: !Ref S3RootBucket
-                S3ObjectKey: !Sub projects/${PipelineName}.yaml.zip
+                S3ObjectKey: !Sub projects/${PipelineName}.zip
                 PollForSourceChanges: false
               OutputArtifacts:
                 - Name: Source
@@ -90,7 +90,7 @@ Resources:
       ServiceRole: !Sub ${PipelineName}-PipelineBuildServiceRole
       Source:
         Type: S3
-        Location: !Sub ${S3RootBucket}/projects/${PipelineName}.yaml.zip
+        Location: !Sub ${S3RootBucket}/projects/${PipelineName}.yzip
         BuildSpec: !Sub |
           version: 0.2
           phases:

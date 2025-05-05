@@ -1,16 +1,16 @@
 # [DRAFT] aws-cicd
 Collection of AWS resources for CICD pipeline deployment and automation.
 
-* Under the `cfn-templates` directory, the CloudFormation template `create-cicd-pipeline.yaml` takes a project name parameter, which references a file's basename within the `projects/` directory.
+* Under the `cfn-templates` directory, the CloudFormation template `create-cicd-pipeline.yaml` takes a project name parameter, which matches and references the project directory within the `projects/` directory.
   * Example to create the pipeline for `web-stack-dev`:
     * `aws cloudformation create-stack --stack-name web-stack-dev-infra --template-url https://${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/cfn-templates/create-cicd-pipeline.yaml --parameters ParameterKey=PipelineName,ParameterValue=web-stack-dev ParameterKey=S3RootBucket,ParameterValue=${AWS_S3_BUCKET_NAME} --profile {AWS_S3_PROFILE} --region ${AWS_REGION} --capabilities CAPABILITY_NAMED_IAM`.
-* The directory `projects/` contains the file that create the downstream pipelines.
-    * Using the example above, that would be: `projects/web-stack-dev.yaml`.
+* The directory `projects/` contains the project that create the downstream pipelines.
+    * Using the example above, that would be: `projects/web-stack-dev`.
 * General CloudFormation templates are stored in other subdirectories. These are designed to be modular, re-used, and nested in multiple projects:
   * `cfn-templates/ec2/`
   * `cfn-templates/s3/`
 
-* Bash scripts for testing pipelines in development & cleanup for projects are stored in `bash-scripts/`.
+* Bash scripts, for testing pipelines in development & cleanup for projects, are stored in `bash-scripts/`.
   * Pipeline cleanup script. Deleting a CloudFormation stack doesn't always clean up the whole project and the resources it created! The main bash script to help with that is:
     * `bash-scripts/cleanup-cicd-pipeline.sh` cleans up a project by passing in these parameters:
       * `-p` Project Name
@@ -26,15 +26,16 @@ Collection of AWS resources for CICD pipeline deployment and automation.
     * These projects should be zipped to create artifacts.
       * Example (but see `bash-scripts/sync-projects.sh`): 
       ```
-      for f in *.yaml *.yml; do
-        if [[ -f "${f}" ]]; then
-          echo "$(date) :: Zipping project ${f} to ${f}.zip"
+      cd ${PROJECT_REPO_DIR}/
+      
+      for d in ${PROJECT_REPO_DIR}/*; do
+        if [[ -d "${d}" ]]; then
+          echo "$(date) :: Zipping project directory, ${d}, to ${d}.zip..."
           echo
       
-          zip "${f}.zip" "${f}"
+          zip "${d}.zip" "${d}"
         fi
-        done
+      done
               
       aws s3 sync aws-cicd/ ${S3_BUCKET_URL} --profile ${S3_USER_PROFILE} --size-only
       ```
-

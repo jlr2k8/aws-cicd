@@ -72,16 +72,16 @@ mkdir -p ${TMP_DIR} \
   && cp -rf ${PROJECT_REPO_DIR}/ ${TMP_DIR} \
   && find . -type f -exec dos2unix {} \;
 
-cd ${PROJECT_REPO_DIR}/projects
+      cd ${PROJECT_REPO_DIR}/
 
-for f in *.yaml *.yml; do
-  if [[ -f "${f}" ]]; then
-    echo "$(date) :: Zipping project yaml files, ${f}, to ${f}.zip..."
-    echo
+      for d in ${PROJECT_REPO_DIR}/*; do
+        if [[ -d "${d}" ]]; then
+          echo "$(date) :: Zipping project directory, ${d}, to ${d}.zip..."
+          echo
 
-    zip "${f}.zip" "${f}"
-  fi
-done
+          zip "${d}.zip" "${d}"
+        fi
+      done
 
 echo "$(date) :: Syncing ${AWS_S3_BUCKET_URL} with profile ${AWS_S3_PROFILE}..."
 echo
