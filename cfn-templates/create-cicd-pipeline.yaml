@@ -5,16 +5,12 @@ Description: CICD pipeline
 Parameters:
   PipelineName:
     Type: String
-    Description: Name of Pipeline (alphanumeric characters, dashes only, and 20 character limit)
-    AllowedPattern: '[A-Za-z0-9\-]{1,20}'
+    Description: Name of Pipeline project directory (alphanumeric characters, dashes, and forward slashes only)
+    AllowedPattern: '[A-Za-z0-9\-\/]{1,255}'
 
   S3RootBucket:
     Type: String
     Description: S3 bucket where the cfn-templates and projects directories exist
-
-  TestParam:
-    Type: String
-    Default: "NULL"
 
 
 Resources:
@@ -70,14 +66,10 @@ Resources:
               Configuration:
                 ActionMode: CREATE_UPDATE
                 StackName: !Sub ${AWS::StackName}
-                TemplatePath: !Sub Build::${PipelineName}.yaml
+                TemplatePath: !Sub Build::${PipelineName}/${PipelineName}.yaml
                 Capabilities: CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt PipelineServiceRole.Arn
                 OutputFileName: output.json
-                ParameterOverrides: !Sub |
-                  {
-                    "TestParam": { "Fn::GetParam" : ["Build", "output.json", "TestParam"] }
-                  }
     DependsOn:
       - CodeBuild
 
@@ -90,18 +82,8 @@ Resources:
       ServiceRole: !Sub ${PipelineName}-PipelineBuildServiceRole
       Source:
         Type: S3
-        Location: !Sub ${S3RootBucket}/projects/${PipelineName}.yzip
-        BuildSpec: !Sub |
-          version: 0.2
-          phases:
-            build:
-              commands:
-                - echo 'Listing out files'
-                - ls -lta
-                - echo '{"TestParam":"Testing something dynamic ${S3RootBucket}"}' > output.json
-          artifacts:
-            files:
-              - '**/*'
+        Location: !Sub ${S3RootBucket}/projects/${PipelineName}.zip
+        BuildSpec: !Sub ${PipelineName}/buildspec.yml
       Artifacts:
         Type: S3
         Location: !Sub ${AWS::Region}-${AWS::AccountId}-${PipelineName}

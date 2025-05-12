@@ -34,7 +34,7 @@ function showHelp() {
 while getopts ":p:s:u:fh" OPT; do
     case "${OPT}" in
         p)
-            echo "Project repo directory: ${OPTARG}"
+            echo "Project working copy directory: ${OPTARG}"
             PROJECT_REPO_DIR="${OPTARG}"
             ;;
         s)
@@ -69,21 +69,21 @@ echo
 
 mkdir -p ${TMP_DIR} \
   && cd ${TMP_DIR} \
-  && cp -rf ${PROJECT_REPO_DIR}/ ${TMP_DIR} \
-  && find . -type f -exec dos2unix {} \;
+  && cp -rf ${PROJECT_REPO_DIR}/* ${TMP_DIR}/ \
+  && find . -type f -exec dos2unix -q {} \;
 
-      cd ${PROJECT_REPO_DIR}/
+      cd ${TMP_DIR}/projects
 
-      for d in ${PROJECT_REPO_DIR}/*; do
+      for d in *; do
         if [[ -d "${d}" ]]; then
           echo "$(date) :: Zipping project directory, ${d}, to ${d}.zip..."
           echo
 
-          zip "${d}.zip" "${d}"
+          zip -r "${d}.zip" "${d}"/*
         fi
       done
 
 echo "$(date) :: Syncing ${AWS_S3_BUCKET_URL} with profile ${AWS_S3_PROFILE}..."
 echo
 
-aws s3 sync ${TMP_DIR}/aws-cicd ${AWS_S3_BUCKET_URL} --profile ${AWS_S3_PROFILE} ${S3_SYNC_SIZE_ONLY} --exclude ".*" --exclude ".*/*"
+aws s3 sync ${TMP_DIR} ${AWS_S3_BUCKET_URL} --profile ${AWS_S3_PROFILE} ${S3_SYNC_SIZE_ONLY} --exclude ".*" --exclude ".*/*"
