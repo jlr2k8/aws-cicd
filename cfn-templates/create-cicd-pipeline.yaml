@@ -127,6 +127,7 @@ Resources:
                 - iam.amazonaws.com
                 - ec2.amazonaws.com
                 - sts.amazonaws.com
+                - secretsmanager.amazonaws.com
             Action: 'sts:AssumeRole'
       Policies:
         - PolicyName: !Sub project-pipeline-policy-${PipelineName}
@@ -148,6 +149,9 @@ Resources:
                   - ec2:*
                   - sts:*
                   - secretsmanager:GetSecretValue
+                  - secretsmanager:GetRandomPassword
+                  - secretsmanager:CreateSecret
+                  - secretsmanager:DeleteSecret
                 Resource: "*"
 
   PipelineBuildServiceRole:

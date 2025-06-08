@@ -4,7 +4,8 @@ phases:
   build:
     commands:
       - echo 'Listing out files'
-      - ls -lta
+      - ls -lta web-stack-dev
+
 artifacts:
   files:
     - '**/*'

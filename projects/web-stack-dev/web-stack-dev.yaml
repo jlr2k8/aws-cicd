@@ -25,6 +25,16 @@ Resources:
         SecurityGroupWeb: !GetAtt WebSecurityGroupDev.Outputs.WebSecurityGroupId
         VpcId: '{{resolve:secretsmanager:web-stack-dev:SecretString:VpcId}}'
 
+  DbCredentials:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: db-credentials
+      GenerateSecretString:
+        SecretStringTemplate: '{"username":"webuser"}'
+        GenerateStringKey: "password"
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+
   WebEc2InstanceDev:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
@@ -38,9 +48,14 @@ Resources:
         SecurityGroupId: !GetAtt WebSecurityGroupDev.Outputs.WebSecurityGroupId
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
         UserData:
-          "Fn::Base64": !Sub |
+          Fn::Base64: |
             #!/bin/bash
-            apt-get update && echo "I'm the dev web server!" > /usr/local/test.txt
+            apt-get update
+            apt-get install -y apache2 php libapache2-mod-php
+            systemctl enable apache2
+            systemctl start apache2
+            
+    DependsOn: DbCredentials
 
   ApiEc2InstanceDev:
     Type: AWS::CloudFormation::Stack
@@ -55,6 +70,15 @@ Resources:
         SecurityGroupId: !GetAtt ApiSecurityGroupDev.Outputs.ApiSecurityGroupId
         SubnetId: '{{resolve:secretsmanager:web-stack-dev:SecretString:SubnetId}}'
         UserData:
-          "Fn::Base64": !Sub |
+          Fn::Base64: |
             #!/bin/bash
-            apt-get update && echo "I'm the dev API server!" > /usr/local/test.txt
+            apt-get update
+            apt-get install -y mariadb-server awscli jq
+            systemctl enable mariadb
+            systemctl start mariadb
+            SECRET=$(aws secretsmanager get-secret-value --region {aws_region} --secret-id db-credentials --query SecretString --output text)
+            MYSQL_USER=$(echo $SECRET | jq -r .username)
+            MYSQL_PASS=$(echo $SECRET | jq -r .password)
+            mysql -e "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASS';"
+            mysql -e "GRANT ALL PRIVILEGES ON *.* TO '$MYSQL_USER'@'%' WITH GRANT OPTION;"
+            mysql -e "FLUSH PRIVILEGES;"
