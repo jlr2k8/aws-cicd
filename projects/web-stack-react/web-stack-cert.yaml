@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for certificate and hosting React site with S3, CloudFront, and Route53
+
+Parameters:
+  HostedZoneId:
+    Type: String
+    Description: The Route53 Hosted Zone ID for the domain
+  
+  DomainName:
+    Type: String
+    Description: The domain name for the React site
+
+Resources:
+  SSLCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+      CertificateTransparencyLoggingPreference: ENABLED
+
+
+Outputs:
+ CertificateArn:
+    Description: ARN of the SSL certificate
+    Value: !Ref SSLCertificate
+    Export:
+      Name: !Sub "${AWS::StackName}-SSLCertificateArn"
