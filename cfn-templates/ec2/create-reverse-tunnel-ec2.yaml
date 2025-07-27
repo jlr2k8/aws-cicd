@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to set up an EC2 instance for a reverse SSH tunnel. Includes an Elastic IP, Security Group, and configures GatewayPorts and AllowTcpForwarding for SSH.
+
+
+Parameters:
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance.
+  AvailabilityZone:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: The Availability Zone to launch the EC2 instance in.
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    Description: EC2 instance type for the reverse tunnel server.
+  SSHLocation:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: The IP address range that can SSH into the EC2 instance.
+  TunnelPort:
+    Type: Number
+    Default: 9000
+    Description: The port on the EC2 instance that will be used for the reverse tunnel.
+  LocalServicePort:
+    Type: Number
+    Description: The port of the local service on the util server that the tunnel connects to.
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: The ID of an existing Route 53 Hosted Zone where the subdomain will be created.
+  HostedZoneName:
+    Type: String
+    Description: The name of the Hosted Zone (e.g., yourdomain.com).
+  SubdomainName:
+    Type: String
+    Default: tunnel
+    Description: The subdomain name to create (e.g., "tunnel" for tunnel.yourdomain.com).
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64'
+    Description: Latest AMI ID for Amazon Linux 2023 (AL2023).
+
+
+Resources:
+  ReverseTunnelSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and Tunnel Port access to the reverse tunnel EC2 instance
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: !Ref TunnelPort
+          ToPort: !Ref TunnelPort
+          CidrIp: 0.0.0.0/0
+
+  ReverseTunnelInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      AvailabilityZone: !Ref AvailabilityZone
+      SecurityGroupIds:
+        - !GetAtt ReverseTunnelSecurityGroup.GroupId
+      UserData: !Base64 |
+        #!/bin/bash -xe
+        sed -i 's/#GatewayPorts no/GatewayPorts yes/' /etc/ssh/sshd_config
+        if ! grep -q "^AllowTcpForwarding" /etc/ssh/sshd_config; then
+          echo "AllowTcpForwarding yes" >> /etc/ssh/sshd_config
+        else
+          sed -i 's/^AllowTcpForwarding.*/AllowTcpForwarding yes/' /etc/ssh/sshd_config
+        fi
+        systemctl restart sshd
+      Tags:
+        - Key: Name
+          Value: ReverseTunnelInstance
+
+  ReverseTunnelElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref ReverseTunnelInstance
+
+  TunnelDnsRecord:
+      Type: AWS::Route53::RecordSet
+      Properties:
+        HostedZoneId: !Ref HostedZoneId
+        Name: !Join [ ".", [ !Ref SubdomainName, !Ref HostedZoneName ] ]
+        Type: A
+        TTL: '300'
+        ResourceRecords:
+          - !Ref ReverseTunnelElasticIP
+
+
+Outputs:
+  PublicIp:
+    Description: Public IP address of the Reverse Tunnel EC2 Instance
+    Value: !GetAtt ReverseTunnelInstance.PublicIp
+  PublicDnsName:
+    Description: Public DNS name of the Reverse Tunnel EC2 Instance
+    Value: !GetAtt ReverseTunnelInstance.PublicDnsName
+  TunnelPort:
+    Description: The port to use for the reverse tunnel on the EC2 instance
+    Value: !Ref TunnelPort
+  ServicePort:
+    Description: The port of the service on the util server that the tunnel connects to
+    Value: !Ref LocalServicePort
