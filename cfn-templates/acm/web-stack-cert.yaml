@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFormation template for certificate and hosting React site with S3, CloudFront, and Route53
+Description: Template to provision an ACM SSL certificate with DNS validation for a static website
 
 Parameters:
   HostedZoneId:
@@ -8,7 +8,7 @@ Parameters:
   
   DomainName:
     Type: String
-    Description: The domain name for the React site
+    Description: The domain name for the website
 
 Resources:
   SSLCertificate:
