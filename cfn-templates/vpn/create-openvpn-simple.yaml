@@ -1,0 +1,328 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Creates an OpenVPN server using existing Elastic IP'
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: VPC ID where the VPN will be deployed
+
+  SubnetId:
+    Type: String
+    Description: Subnet ID for the VPN endpoint (should be in a public subnet)
+
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 Key Pair for SSH access
+
+  InstanceType:
+    Type: String
+    Description: EC2 instance type for OpenVPN server
+    Default: 't3.micro'
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+
+  DevBoxSecurityGroupId:
+    Type: String
+    Description: Security Group ID of the dev-dev-box instance
+
+  ExistingElasticIP:
+    Type: String
+    Description: Existing Elastic IP to use
+    Default: ''
+
+  HostedZoneId:
+    Type: String
+    Description: Route53 Hosted Zone ID for DNS record
+    Default: ''
+
+  DnsName:
+    Type: String
+    Description: DNS name for the VPN server
+    Default: ''
+
+Resources:
+  # Security Group for OpenVPN server
+  OpenVpnSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: 'openvpn-server-security-group'
+      GroupDescription: 'Security group for OpenVPN server'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: udp
+          FromPort: 1194
+          ToPort: 1194
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: tcp
+          FromPort: 943
+          ToPort: 943
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+          FromPort: 0
+          ToPort: 65535
+
+  # OpenVPN Server Instance
+  OpenVpnServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0e15691111f1b646d  # Amazon Linux 2023
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref OpenVpnSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+            dnf update -y
+            dnf install -y epel-release wget
+            dnf install -y openvpn
+          
+          # Install easy-rsa manually
+          cd /tmp
+          wget https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.2/EasyRSA-3.1.2.tgz
+          tar xzf EasyRSA-3.1.2.tgz
+          mv EasyRSA-3.1.2 /etc/openvpn/easy-rsa
+          cd /etc/openvpn/easy-rsa
+          
+          # Initialize PKI
+          ./easyrsa init-pki
+          echo "OpenVPN-CA" | ./easyrsa build-ca nopass
+          
+          # Generate server certificate
+          echo "OpenVPN-Server" | ./easyrsa gen-req server nopass
+          echo "yes" | ./easyrsa sign-req server server
+          
+          # Generate Diffie-Hellman parameters
+          ./easyrsa gen-dh
+          
+          # Generate TLS auth key
+          openvpn --genkey --secret /etc/openvpn/ta.key
+          
+          # Create server configuration
+          cat > /etc/openvpn/server.conf << 'EOF'
+          port 1194
+          proto udp
+          dev tun
+          ca /etc/openvpn/easy-rsa/pki/ca.crt
+          cert /etc/openvpn/easy-rsa/pki/issued/server.crt
+          key /etc/openvpn/easy-rsa/pki/private/server.key
+          dh /etc/openvpn/easy-rsa/pki/dh.pem
+          tls-auth /etc/openvpn/ta.key 0
+          server 10.8.0.0 255.255.255.0
+          ifconfig-pool-persist /var/log/openvpn/ipp.txt
+          push "route 10.0.0.0 255.255.0.0"
+          push "dhcp-option DNS 8.8.8.8"
+          push "dhcp-option DNS 8.8.4.4"
+          keepalive 10 120
+          cipher AES-256-GCM
+          user nobody
+          group nobody
+          persist-key
+          persist-tun
+          status /var/log/openvpn/openvpn-status.log
+          verb 3
+          explicit-exit-notify 1
+          EOF
+          
+          # Create log directory
+          mkdir -p /var/log/openvpn
+          
+          # Enable IP forwarding
+          echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+          sysctl -p
+          
+          # Configure iptables for VPN routing
+          # NAT rules for VPN client traffic
+          iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o ens5 -j MASQUERADE
+          iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -d 10.0.1.96 -j MASQUERADE
+          
+          # FORWARD rules for VPN subnet to dev-dev-box communication
+          iptables -t filter -A FORWARD -s 10.8.0.0/24 -d 10.0.1.96 -j ACCEPT
+          iptables -t filter -A FORWARD -s 10.0.1.96 -d 10.8.0.0/24 -j ACCEPT
+          
+          # Add specific route for dev-dev-box
+          ip route add 10.0.1.96/32 via 10.0.1.1 dev ens5
+          
+          # Make iptables rules persistent
+          iptables-save > /etc/iptables/rules.v4
+          
+          # Start OpenVPN
+          systemctl enable openvpn@server
+          systemctl start openvpn@server
+          
+          # If the service doesn't exist, start OpenVPN manually
+          if ! systemctl is-active --quiet openvpn@server; then
+            openvpn --config /etc/openvpn/server.conf --daemon
+          fi
+          
+          # Create client certificate script
+          cat > /home/ec2-user/create-client.sh << 'EOF'
+          #!/bin/bash
+          if [ -z "$1" ]; then
+            echo "Usage: $0 <client-name>"
+            exit 1
+          fi
+          
+          cd /etc/openvpn/easy-rsa
+          echo "$1" | ./easyrsa gen-req $1 nopass
+          echo "yes" | ./easyrsa sign-req client $1
+          
+          # Create client config
+          cat > /home/ec2-user/$1.ovpn << 'CLIENT_EOF'
+          client
+          dev tun
+          proto udp
+          remote ${DnsName} 1194
+          resolv-retry infinite
+          nobind
+          persist-key
+          persist-tun
+          cipher AES-256-GCM
+          verb 3
+          <ca>
+          CLIENT_EOF
+          
+          cat /etc/openvpn/easy-rsa/pki/ca.crt >> /home/ec2-user/$1.ovpn
+          echo "</ca>" >> /home/ec2-user/$1.ovpn
+          echo "<cert>" >> /home/ec2-user/$1.ovpn
+          cat /etc/openvpn/easy-rsa/pki/issued/$1.crt >> /home/ec2-user/$1.ovpn
+          echo "</cert>" >> /home/ec2-user/$1.ovpn
+          echo "<key>" >> /home/ec2-user/$1.ovpn
+          cat /etc/openvpn/easy-rsa/pki/private/$1.key >> /home/ec2-user/$1.ovpn
+          echo "</key>" >> /home/ec2-user/$1.ovpn
+          echo "key-direction 1" >> /home/ec2-user/$1.ovpn
+          echo "<tls-auth>" >> /home/ec2-user/$1.ovpn
+          cat /etc/openvpn/ta.key >> /home/ec2-user/$1.ovpn
+          echo "</tls-auth>" >> /home/ec2-user/$1.ovpn
+          
+          chmod 600 /home/ec2-user/$1.ovpn
+          chown ec2-user:ec2-user /home/ec2-user/$1.ovpn
+          echo "Client certificate created: /home/ec2-user/$1.ovpn"
+          EOF
+          
+          chmod +x /home/ec2-user/create-client.sh
+          chown ec2-user:ec2-user /home/ec2-user/create-client.sh
+          
+      Tags:
+        - Key: Name
+          Value: OpenVPN-Server
+
+  # Associate Elastic IP with OpenVPN server
+  OpenVpnEIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref OpenVpnServer
+      EIP: !Ref ExistingElasticIP
+
+  # Security Group Rule to allow OpenVPN access to dev-dev-box
+  OpenVpnToDevBoxRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DevBoxSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: !Ref OpenVpnSecurityGroup
+      Description: 'Allow SSH access from OpenVPN clients'
+
+  # Additional rule for HTTP/HTTPS if needed
+  OpenVpnToDevBoxHttpRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DevBoxSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !Ref OpenVpnSecurityGroup
+      Description: 'Allow HTTP access from OpenVPN clients'
+
+  OpenVpnToDevBoxHttpsRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DevBoxSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref OpenVpnSecurityGroup
+      Description: 'Allow HTTPS access from OpenVPN clients'
+
+  # RDP access from OpenVPN clients
+  OpenVpnToDevBoxRdpRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DevBoxSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 3389
+      ToPort: 3389
+      SourceSecurityGroupId: !Ref OpenVpnSecurityGroup
+      Description: 'Allow RDP access from OpenVPN clients'
+
+  # ICMP access from OpenVPN clients (for testing)
+  OpenVpnToDevBoxIcmpRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DevBoxSecurityGroupId
+      IpProtocol: icmp
+      FromPort: -1
+      ToPort: -1
+      SourceSecurityGroupId: !Ref OpenVpnSecurityGroup
+      Description: 'Allow ICMP access from OpenVPN clients'
+
+  # DNS Record for VPN server
+  VpnDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDnsRecord
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DnsName
+      Type: A
+      TTL: 300
+      ResourceRecords:
+        - !Ref ExistingElasticIP
+
+Conditions:
+  CreateDnsRecord: !And
+    - !Not [!Equals [!Ref HostedZoneId, '']]
+    - !Not [!Equals [!Ref DnsName, '']]
+
+Outputs:
+  OpenVpnServerId:
+    Description: 'OpenVPN Server Instance ID'
+    Value: !Ref OpenVpnServer
+    Export:
+      Name: !Sub '${AWS::StackName}-OpenVpnServerId'
+
+  OpenVpnServerPublicIP:
+    Description: 'OpenVPN Server Public IP'
+    Value: !Ref ExistingElasticIP
+    Export:
+      Name: !Sub '${AWS::StackName}-OpenVpnServerPublicIP'
+
+  OpenVpnSecurityGroupId:
+    Description: 'OpenVPN Security Group ID'
+    Value: !Ref OpenVpnSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-OpenVpnSecurityGroupId'
+
+  ConnectionInstructions:
+    Description: 'Instructions to connect to OpenVPN'
+    Value: !Sub |
+      To connect to your dev-dev-box:
+      1. SSH to the OpenVPN server: ssh -i your-key.pem ec2-user@${ExistingElasticIP}
+      2. Create a client certificate: sudo /home/ec2-user/create-client.sh your-name
+      3. Download the .ovpn file: scp -i your-key.pem ec2-user@${ExistingElasticIP}:/home/ec2-user/your-name.ovpn .
+      4. Import the .ovpn file into your OpenVPN client
+      5. Connect to the VPN
+      6. RDP to your dev-dev-box: mstsc /v:10.0.1.96
+      7. Or SSH to your dev-dev-box: ssh ec2-user@10.0.1.96
+      
+      DNS: ${DnsName} (if configured)
